@@ -94,4 +94,26 @@ protected:
     // motor failure handling
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
     uint8_t             _motor_lost_index;  // index number of the lost motor
+
+private:
+    struct ice_consts_t {
+        //todo: Gad - udpate constants
+        const uint8_t mix_mode = 1;
+        const uint8_t ice_ch_in = 7;
+        const float ice_slew_rate = 1.0;
+
+        const float p_gain = 1.0;
+        const float i_gain = 1.0;
+        const float d_gain = 1.0;
+        const float i_max_limit = 1.0;
+        const float i_min_limit = -1.0;
+
+    } _ice_consts;
+    
+    bool ice_compute_and_write();
+    float ice_pid_control(float err);
+    float ice_slew(const float norm_val);
+
+
+
 };

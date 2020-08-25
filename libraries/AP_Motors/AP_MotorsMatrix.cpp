@@ -104,6 +104,11 @@ void AP_MotorsMatrix::output_to_motors()
             rc_write(i, output_to_pwm(_actuator[i]));
         }
     }
+
+    // calculate ice mixed output, and write it to ice servo
+    if ( ! ice_compute_and_write() ) {
+        //TODO: print some error?
+    }
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -325,6 +330,152 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // check for failed motor
     check_for_failed_motor(throttle_thrust_best_plus_adj);
+}
+
+/**
+ * @brief scale value b/w min and max to range of 0..1
+ * 
+ * @param val 
+ * @param min 
+ * @param max 
+ * @return float [0..1]
+ */
+static float normalize(const uint16_t val, const int16_t min, const int16_t max) {
+    return (static_cast<float>(val) - min) / (max - min);
+}
+
+/**
+ * @brief scale value from range of 0..1 to range [min..max]
+ * 
+ * @param val [0..1]
+ * @param min - min of the new range
+ * @param max - max of the new range 
+ * @return float [min..max]
+ */
+static float scale_normal(const float val, const int16_t min, const int16_t max) {
+    const int16_t range = max - min;
+    const float scaled_val = (val * range + min) / range;
+    return constrain_float(scaled_val, min, max);
+}
+
+/*
+    Limit the ICE throttle rate level
+    inpute/output range 0..1
+    Function returns updated throttle level
+*/
+
+/**
+ * @brief limit ICE throttle level change rate
+ * 
+ * @param norm_val [0..1]
+ * @return float 
+ */
+float AP_MotorsMatrix::ice_slew(const float norm_val) {
+    static float last_norm_val = 0;
+    float max_diff = 1/((_ice_consts.ice_slew_rate * _loop_rate)+1);
+
+    if(norm_val >= last_norm_val) {
+        if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
+        else last_norm_val = norm_val; 
+    } else {
+        if ((last_norm_val - norm_val) > max_diff) last_norm_val -= max_diff;
+        else last_norm_val = norm_val;
+    }
+
+    return last_norm_val;
+} 
+
+/**
+ * @brief ICE PID controller
+ * 
+ * @param err - error in current step
+ * @return float - output [0..1]
+ */
+float AP_MotorsMatrix::ice_pid_control(float err) {    
+
+    static float integral = 0;
+    static float last_err = 0;
+
+    integral += err;
+    constrain_float(integral, _ice_consts.i_min_limit, _ice_consts.i_max_limit);
+
+    float output = (err * _ice_consts.p_gain) + 
+                    (integral * _ice_consts.i_gain) + 
+                    (err - last_err) * _ice_consts.d_gain;
+
+    return constrain_float(output, 0, 1);
+}
+
+/**
+ * @brief computed ICE servo output according to 
+ * operation mode, and write it to ICE servo if done 
+ * successfully.
+ * 
+ * @return true on success, false otherwise
+ */
+bool AP_MotorsMatrix::ice_compute_and_write() {
+
+    // todo: init ice_channel only once from constructor
+    /******** INITIALIZATION ********/
+    if (_ice_consts.ice_ch_in <= 0) { // ice rc disabled
+        return false;
+    }
+
+    // find ICE control servo
+    uint8_t servo_chnl = 0;
+    if ( ! SRV_Channels::find_channel(SRV_Channel::k_throttle, servo_chnl) ) {
+        // gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo chennal not found");
+        return false;
+    }
+    // gcs().send_text(MAV_SEVERITY_NOTICE, "ICE servo chennal #%d",_ice_servo_chan+1);
+    SRV_Channel * const ice_out_servo_chnl = SRV_Channels::get_channel_for(SRV_Channel::k_throttle, servo_chnl);
+    if (ice_out_servo_chnl == nullptr) {
+        return false;
+    }
+
+    // todo: init ice_channel only once from constructor
+    const RC_Channel * ice_in_channel = rc().channel(_ice_consts.ice_ch_in-1);
+    if (ice_in_channel == nullptr) {
+        return false;
+    }
+    /*******************************/
+
+    // get ice servo channel boundries
+    const uint16_t ice_out_raw_min = ice_out_servo_chnl->get_output_min();
+    const uint16_t ice_out_raw_max = ice_out_servo_chnl->get_output_max();
+
+    // get ice radio channel boundaries and value
+    int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
+    const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
+    const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
+
+    constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+    const float ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+    
+    float ice_in_slew = 0;
+    switch (_ice_consts.mix_mode) {
+        case 1: { //HYBRYDE_MIXING_MODE_PASSTHROUGH
+            ice_in_slew = ice_slew(ice_in_norm_val);
+            break;
+        } case 2: {//HYBRYDE_MIXING_MODE_CONST_GAIN:
+            const float p_gained_throttle = get_throttle() * _ice_consts.p_gain;
+            // mix with incoming rc value
+            const float mixed_output = ice_in_norm_val * p_gained_throttle;
+            ice_in_slew = ice_slew(mixed_output);
+            break;
+        } case 3: {//HYBRIDE_MIXING_MODE_PID:
+            const float error = get_throttle() - ice_in_norm_val;
+            const float pid_output = ice_pid_control(error);
+            ice_in_slew = ice_slew(pid_output);
+            break;
+        } default: {
+
+        }
+    }
+
+    const uint16_t output = scale_normal(ice_in_slew, ice_out_raw_min, ice_out_raw_max);
+    ice_out_servo_chnl->set_output_pwm(output);
+    return true;
 }
 
 // check for failed motor
