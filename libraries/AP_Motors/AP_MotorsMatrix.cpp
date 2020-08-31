@@ -15,6 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -424,10 +425,11 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     // find ICE control servo
     uint8_t servo_chnl = 0;
     if ( ! SRV_Channels::find_channel(SRV_Channel::k_throttle, servo_chnl) ) {
-        // gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo chennal not found");
+        //gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo chennal not found");
         return false;
     }
-    // gcs().send_text(MAV_SEVERITY_NOTICE, "ICE servo chennal #%d",_ice_servo_chan+1);
+    //gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo channel #%d",servo_chnl+1);
+    
     SRV_Channel * const ice_out_servo_chnl = SRV_Channels::get_channel_for(SRV_Channel::k_throttle, servo_chnl);
     if (ice_out_servo_chnl == nullptr) {
         return false;
@@ -441,8 +443,8 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     /*******************************/
 
     // get ice servo channel boundries
-    const uint16_t ice_out_raw_min = ice_out_servo_chnl->get_output_min();
-    const uint16_t ice_out_raw_max = ice_out_servo_chnl->get_output_max();
+    //const uint16_t ice_out_raw_min = ice_out_servo_chnl->get_output_min();
+    //const uint16_t ice_out_raw_max = ice_out_servo_chnl->get_output_max();
 
     // get ice radio channel boundaries and value
     int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
@@ -473,8 +475,17 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
         }
     }
 
-    const uint16_t output = scale_normal(ice_in_slew, ice_out_raw_min, ice_out_raw_max);
-    ice_out_servo_chnl->set_output_pwm(output);
+    //gcs().send_text(MAV_SEVERITY_ERROR, "ice_in_slew: %f",ice_in_slew);
+
+     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_in_slew * 100);
+
+    //const uint16_t output = scale_normal(ice_in_slew, ice_out_raw_min, ice_out_raw_max);
+
+    //gcs().send_text(MAV_SEVERITY_ERROR, "output: %d",output);
+
+   
+
+    //ice_out_servo_chnl->set_output_pwm(output);
     return true;
 }
 
