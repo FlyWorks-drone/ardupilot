@@ -397,8 +397,11 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
     static float integral = 0;
     static float last_err = 0;
 
-    integral += err;
-    constrain_float(integral, _ice_consts.i_min_limit, _ice_consts.i_max_limit);
+    //integral += err;
+    integral=constrain_float(integral+err, _ice_consts.i_min_limit, _ice_consts.i_max_limit);
+
+    gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
+
 
     float output = (err * _ice_consts.p_gain) + 
                     (integral * _ice_consts.i_gain) + 

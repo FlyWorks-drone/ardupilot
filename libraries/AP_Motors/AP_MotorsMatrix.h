@@ -98,13 +98,13 @@ protected:
 private:
     struct ice_consts_t {
         //todo: Gad - udpate constants
-        const uint8_t mix_mode = 1;
+        const uint8_t mix_mode = 3;
         const uint8_t ice_ch_in = 7;
-        const float ice_slew_rate = 1.0;
+        const float ice_slew_rate = 0.5;
 
-        const float p_gain = 1.0;
-        const float i_gain = 1.0;
-        const float d_gain = 1.0;
+        const float p_gain = 0.5;
+        const float i_gain = 0.25;
+        const float d_gain = 0.25;
         const float i_max_limit = 1.0;
         const float i_min_limit = -1.0;
 
