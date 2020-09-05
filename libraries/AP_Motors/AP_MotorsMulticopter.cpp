@@ -206,6 +206,73 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+    /* START OF ICE PARAMS */
+
+    // @Param: MIX_MODE
+    // @DisplayName: ICE mix mode.
+    // @Description: ICE mix mode.
+    // @Values: 0:Disabled, 1:Pass Through, 2:Constant Gain, 3:PID
+    // @User: Advanced
+    AP_GROUPINFO("MIX_MODE", 43, AP_MotorsMulticopter, _ice_mix_mode, 0),
+
+    // @Param: CHNL_IN
+    // @DisplayName: ICE input channel
+    // @Description: ICE input channel
+    // @Range: 0 7
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CHNL_IN", 44, AP_MotorsMulticopter, _ice_ch_in, 7),
+
+    // @Param: SLEW_RATE
+    // @DisplayName: ICE throtttle slew rate
+    // @Description: ICE throtttle slew rate
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_RATE", 45, AP_MotorsMulticopter, _ice_slew_rate, 0.5),
+
+    // @Param: P_GAIN
+    // @DisplayName: ICE P gain
+    // @Description: ICE P gain
+    // @Range: 0 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("P_GAIN", 46, AP_MotorsMulticopter, _ice_p_gain, 0.5),
+
+    // @Param: I_GAIN
+    // @DisplayName: ICE I gain
+    // @Description: ICE I gain
+    // @Range: 0 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("I_GAIN", 47, AP_MotorsMulticopter, _ice_i_gain, 0.25),
+
+    // @Param: D_GAIN
+    // @DisplayName: ICE D gain
+    // @Description: ICE D gain
+    // @Range: 0 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("D_GAIN", 48, AP_MotorsMulticopter, _ice_d_gain, 0.25),
+
+    // @Param: I_MIN
+    // @DisplayName: ICE I min limit
+    // @Description: ICE I min limit
+    // @Range: -10 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("I_MIN", 49, AP_MotorsMulticopter, _ice_i_limit_min, -1),
+
+    // @Param: I_MAX
+    // @DisplayName: ICE I max limit
+    // @Description: ICE I max limit
+    // @Range: -10 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("I_MAX", 50, AP_MotorsMulticopter, _ice_i_limit_max, 1),
+
+    /* END OF ICE PARAMS */
+
     AP_GROUPEND
 };
 

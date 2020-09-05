@@ -169,6 +169,14 @@ protected:
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
+    AP_Int8             _ice_mix_mode;          // ice mix mode 
+    AP_Int8             _ice_ch_in;             // ice input channel
+    AP_Float            _ice_slew_rate;         // ice slew rate
+    AP_Float            _ice_p_gain;            // ice PID - p gain
+    AP_Float            _ice_i_gain;            // ice PID - i gain
+    AP_Float            _ice_d_gain;            // ice PID - d gain
+    AP_Float            _ice_i_limit_min;       // ice PID - i minimum limit
+    AP_Float            _ice_i_limit_max;       // ice PID - i maximum limit
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;

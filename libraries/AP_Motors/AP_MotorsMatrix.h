@@ -96,19 +96,6 @@ protected:
     uint8_t             _motor_lost_index;  // index number of the lost motor
 
 private:
-    struct ice_consts_t {
-        //todo: Gad - udpate constants
-        const uint8_t mix_mode = 3;
-        const uint8_t ice_ch_in = 7;
-        const float ice_slew_rate = 0.5;
-
-        const float p_gain = 0.5;
-        const float i_gain = 0.25;
-        const float d_gain = 0.25;
-        const float i_max_limit = 1.0;
-        const float i_min_limit = -1.0;
-
-    } _ice_consts;
     
     bool ice_compute_and_write();
     float ice_pid_control(float err);

@@ -354,7 +354,7 @@ static float normalize(const uint16_t val, const int16_t min, const int16_t max)
  */
 float AP_MotorsMatrix::ice_slew(const float norm_val) {
     static float last_norm_val = 0;
-    float max_diff = 1/((_ice_consts.ice_slew_rate * _loop_rate)+1);
+    float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
 
     if(norm_val >= last_norm_val) {
         if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
@@ -378,29 +378,27 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
     static float integral = 0;
     static float last_err = 0;
 
-    integral=constrain_float(integral+err, _ice_consts.i_min_limit, _ice_consts.i_max_limit);
+    integral=constrain_float(integral+err, _ice_i_limit_min, _ice_i_limit_max);
 
     gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
 
-    float output = (err * _ice_consts.p_gain) + 
-                    (integral * _ice_consts.i_gain) + 
-                    (err - last_err) * _ice_consts.d_gain;
+    float output = (err * _ice_p_gain) + 
+                    (integral * _ice_i_gain) + 
+                    (err - last_err) * _ice_d_gain;
 
     return constrain_float(output, 0, 1);
 }
 
 /**
  * @brief computed ICE servo output according to 
- * operation mode, and write it to ICE servo if done 
+ * operation mode, and write it to ICE servo *iff* done 
  * successfully.
  * 
  * @return true on success, false otherwise
  */
 bool AP_MotorsMatrix::ice_compute_and_write() {
 
-    // todo: init ice_channel only once from constructor
-    /******** INITIALIZATION ********/
-    if (_ice_consts.ice_ch_in <= 0) { // ice rc disabled
+    if (_ice_ch_in <= 0) { // ice rc disabled
         return false;
     }
 
@@ -418,11 +416,10 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     }
 
     // todo: init ice_channel only once from constructor
-    const RC_Channel * ice_in_channel = rc().channel(_ice_consts.ice_ch_in-1);
+    const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
     if (ice_in_channel == nullptr) {
         return false;
     }
-    /*******************************/
 
     // get ice radio channel boundaries and value
     int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
@@ -433,24 +430,29 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     const float ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
     
     float ice_in_slew = 0;
-    switch (_ice_consts.mix_mode) {
-        case 1: { //HYBRYDE_MIXING_MODE_PASSTHROUGH
+    bool valid_mode_activated = true;
+    switch (_ice_mix_mode) {
+        case 1: { // Pass through
             ice_in_slew = ice_slew(ice_in_norm_val);
             break;
-        } case 2: {//HYBRYDE_MIXING_MODE_CONST_GAIN:
-            const float p_gained_throttle = get_throttle() * _ice_consts.p_gain;
+        } case 2: { // Constant gain
+            const float p_gained_throttle = get_throttle() * _ice_p_gain;
             // mix with incoming rc value
             const float mixed_output = ice_in_norm_val * p_gained_throttle;
             ice_in_slew = ice_slew(mixed_output);
             break;
-        } case 3: {//HYBRIDE_MIXING_MODE_PID:
+        } case 3: { // PID
             const float error = get_throttle() - ice_in_norm_val;
             const float pid_output = ice_pid_control(error);
             ice_in_slew = ice_slew(pid_output);
             break;
         } default: {
-
+            valid_mode_activated = false;
         }
+    }
+    
+    if ( ! valid_mode_activated ) { // if no valid ICE mode was activated
+        return false;
     }
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_in_slew * 100);
