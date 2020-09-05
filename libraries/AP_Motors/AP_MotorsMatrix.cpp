@@ -345,25 +345,6 @@ static float normalize(const uint16_t val, const int16_t min, const int16_t max)
     return (static_cast<float>(val) - min) / (max - min);
 }
 
-/**
- * @brief scale value from range of 0..1 to range [min..max]
- * 
- * @param val [0..1]
- * @param min - min of the new range
- * @param max - max of the new range 
- * @return float [min..max]
- */
-static float scale_normal(const float val, const int16_t min, const int16_t max) {
-    const int16_t range = max - min;
-    const float scaled_val = (val * range + min) / range;
-    return constrain_float(scaled_val, min, max);
-}
-
-/*
-    Limit the ICE throttle rate level
-    inpute/output range 0..1
-    Function returns updated throttle level
-*/
 
 /**
  * @brief limit ICE throttle level change rate
@@ -397,11 +378,9 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
     static float integral = 0;
     static float last_err = 0;
 
-    //integral += err;
     integral=constrain_float(integral+err, _ice_consts.i_min_limit, _ice_consts.i_max_limit);
 
     gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
-
 
     float output = (err * _ice_consts.p_gain) + 
                     (integral * _ice_consts.i_gain) + 
@@ -445,10 +424,6 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     }
     /*******************************/
 
-    // get ice servo channel boundries
-    //const uint16_t ice_out_raw_min = ice_out_servo_chnl->get_output_min();
-    //const uint16_t ice_out_raw_max = ice_out_servo_chnl->get_output_max();
-
     // get ice radio channel boundaries and value
     int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
     const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
@@ -478,17 +453,8 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
         }
     }
 
-    //gcs().send_text(MAV_SEVERITY_ERROR, "ice_in_slew: %f",ice_in_slew);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_in_slew * 100);
 
-     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_in_slew * 100);
-
-    //const uint16_t output = scale_normal(ice_in_slew, ice_out_raw_min, ice_out_raw_max);
-
-    //gcs().send_text(MAV_SEVERITY_ERROR, "output: %d",output);
-
-   
-
-    //ice_out_servo_chnl->set_output_pwm(output);
     return true;
 }
 

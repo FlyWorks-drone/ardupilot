@@ -114,6 +114,4 @@ private:
     float ice_pid_control(float err);
     float ice_slew(const float norm_val);
 
-
-
 };
