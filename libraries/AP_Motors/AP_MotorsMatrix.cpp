@@ -69,14 +69,20 @@ void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
 
+    bool _output_ice=true;
+    
+    
+
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
+            
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
                     _actuator[i] = 0.0f;
                 }
             }
+            _output_ice=false;
             break;
         }
         case SpoolState::GROUND_IDLE:
@@ -108,7 +114,15 @@ void AP_MotorsMatrix::output_to_motors()
 
     // calculate ice mixed output, and write it to ice servo
     if ( ! ice_compute_and_write() ) {
+        _output_ice=false;
         //TODO: print some error?
+    }
+
+    //gcs().send_text(MAV_SEVERITY_ERROR, "_ice_out: %f",_ice_out);
+    if ( _output_ice ) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _ice_out * 100);
+    }else{
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
     }
 }
 
@@ -380,7 +394,7 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
 
     integral=constrain_float(integral+err, _ice_i_limit_min, _ice_i_limit_max);
 
-    gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
+    //gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
 
     float output = (err * _ice_p_gain) + 
                     (integral * _ice_i_gain) + 
@@ -455,7 +469,7 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
         return false;
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_in_slew * 100);
+    _ice_out=ice_in_slew;
 
     return true;
 }
