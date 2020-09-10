@@ -69,10 +69,8 @@ void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
 
-    bool _output_ice=true;
+    bool output_ice = true;
     
-    
-
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
@@ -82,7 +80,7 @@ void AP_MotorsMatrix::output_to_motors()
                     _actuator[i] = 0.0f;
                 }
             }
-            _output_ice=false;
+            output_ice = false;
             break;
         }
         case SpoolState::GROUND_IDLE:
@@ -113,17 +111,18 @@ void AP_MotorsMatrix::output_to_motors()
     }
 
     // calculate ice mixed output, and write it to ice servo
-    if ( ! ice_compute_and_write() ) {
-        _output_ice=false;
-        //TODO: print some error?
+    float ice_out = 0; //output for the main ICE engine
+    if ( ! ice_compute_output(ice_out) ) {
+        output_ice = false;
     }
 
-    //gcs().send_text(MAV_SEVERITY_ERROR, "_ice_out: %f",_ice_out);
-    if ( _output_ice ) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _ice_out * 100);
-    }else{
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+    if ( output_ice ) {
+        ice_out = ice_out * 100;
+    } else {
+        ice_out = 0;
     }
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_out);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -410,8 +409,8 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
  * 
  * @return true on success, false otherwise
  */
-bool AP_MotorsMatrix::ice_compute_and_write() {
-
+bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
+{
     if (_ice_ch_in <= 0) { // ice rc disabled
         return false;
     }
@@ -419,17 +418,14 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
     // find ICE control servo
     uint8_t servo_chnl = 0;
     if ( ! SRV_Channels::find_channel(SRV_Channel::k_throttle, servo_chnl) ) {
-        //gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo chennal not found");
         return false;
     }
-    //gcs().send_text(MAV_SEVERITY_ERROR, "ICE servo channel #%d",servo_chnl+1);
     
     SRV_Channel * const ice_out_servo_chnl = SRV_Channels::get_channel_for(SRV_Channel::k_throttle, servo_chnl);
     if (ice_out_servo_chnl == nullptr) {
         return false;
     }
 
-    // todo: init ice_channel only once from constructor
     const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
     if (ice_in_channel == nullptr) {
         return false;
@@ -465,11 +461,11 @@ bool AP_MotorsMatrix::ice_compute_and_write() {
         }
     }
     
-    if ( ! valid_mode_activated ) { // if no valid ICE mode was activated
+    if ( ! valid_mode_activated ) { // no valid ICE mode was activated
         return false;
     }
 
-    _ice_out=ice_in_slew;
+    ice_out = ice_in_slew;
 
     return true;
 }
