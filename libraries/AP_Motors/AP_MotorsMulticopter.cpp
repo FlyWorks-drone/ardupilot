@@ -163,10 +163,10 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     AP_GROUPINFO("SPOOL_TIME", 36, AP_MotorsMulticopter, _spool_up_time, AP_MOTORS_SPOOL_UP_TIME_DEFAULT),
 
     // @Param: BOOST_SCALE
-    // @DisplayName: Motor boost scale
-    // @Description: Booster motor output scaling factor vs main throttle.  The output to the BoostThrottle servo will be the main throttle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
-    // @Range: 0 5
-    // @Increment: 0.1
+    // @DisplayName: Main engine throttle ratio
+    // @Description: The ratio of throttle to be handled by the main engine. The rest will be delievered to the AUX motors. Ratio of 0 means no main engine.
+    // @Range: 0 1
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("BOOST_SCALE", 37, AP_MotorsMulticopter, _boost_scale, 0),
 
@@ -272,6 +272,42 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     AP_GROUPINFO("I_MAX", 50, AP_MotorsMulticopter, _ice_i_limit_max, 1),
 
     /* END OF ICE PARAMS */
+
+    /* START THROTTLE SPLIT PARAMS */
+
+    // @Param: AUX_MIN_TH
+    // @DisplayName: AUX MIN ZONE 2 THROTTLE
+    // @Description: aux minimum throttle in the end of zone 1 and start of zone 2
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_MIN_TH", 51, AP_MotorsMulticopter, _min_thr_aux, 0.15),
+
+    // @Param: AUX_ZN1_RAT
+    // @DisplayName: AUX PORTION OF THRTOTTLE IN ZONE 1
+    // @Description: aux throttle portion in zone 1	
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_ZN1_RAT", 52, AP_MotorsMulticopter, _zn1_ratio_aux, 0.8),
+
+    // @Param: AUX_MAX_TH
+    // @DisplayName: AUX MAX ZONE 2 THROTTLE
+    // @Description: max aux throttle output at the end of zone 2
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_MAX_TH", 53, AP_MotorsMulticopter, _max_thr_aux, 0.35),
+
+    // @Param: MAIN_SAT_TH
+    // @DisplayName: ICE SATURATION THROTTLE
+    // @Description: throttle level at which main engine reaches max throttle (end of zone 2) 
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("MAIN_SAT_TH", 54, AP_MotorsMulticopter, _sat_point_main, 0.85),
+
+    /* END OF THROTTLE SPLIT PARAMS */    
 
     AP_GROUPEND
 };

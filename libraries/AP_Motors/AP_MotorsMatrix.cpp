@@ -116,9 +116,7 @@ void AP_MotorsMatrix::output_to_motors()
         output_ice = false;
     }
 
-    if ( output_ice ) {
-        ice_out = ice_out * 100;
-    } else {
+    if ( ! output_ice ) {
         ice_out = 0;
     }
 
@@ -441,6 +439,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     
     float ice_in_slew = 0;
     bool valid_mode_activated = true;
+    float scale_out = 100;
     switch (_ice_mix_mode) {
         case 1: { // Pass through
             ice_in_slew = ice_slew(ice_in_norm_val);
@@ -451,10 +450,9 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             const float mixed_output = ice_in_norm_val * p_gained_throttle;
             ice_in_slew = ice_slew(mixed_output);
             break;
-        } case 3: { // PID
-            const float error = get_throttle() - ice_in_norm_val;
-            const float pid_output = ice_pid_control(error);
-            ice_in_slew = ice_slew(pid_output);
+        } case 3: { // Thruttle Split
+            ice_in_slew = get_booster_throttle();
+            scale_out = 1000;
             break;
         } default: {
             valid_mode_activated = false;
@@ -465,10 +463,78 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         return false;
     }
 
-    ice_out = ice_in_slew;
+    ice_out = ice_in_slew * scale_out;
 
     return true;
 }
+
+// output booster throttle, if any
+float AP_MotorsMatrix::get_booster_throttle()
+{
+    if (_boost_scale > 0) { //this algorythm working condition is when _boost_scale>0
+        _th_split_total_out = get_throttle_split_total();
+        _boost_throttle = ice_slew(get_throttle_split_main());
+    } else {
+        _boost_throttle=0.0f;
+        _th_split_total_out=0.0f;
+    }
+    constrain_float(_boost_throttle, 0.0f, 1.0f);
+    return _boost_throttle;
+}
+
+float AP_MotorsMatrix::get_throttle_split_main()
+{
+    float curr_scaled_throttle=2.0f*get_throttle();
+    float th_split_main_out=0.0f;
+    float scale_thr_zn2_begin=_min_thr_aux/_zn1_ratio_aux;
+    float scale_thr_zn2_end=2.0f*_sat_point_main;
+
+    if(curr_scaled_throttle<scale_thr_zn2_begin){
+        // Throttle zone 1: spool up the aux motors up to their min throttle 
+        th_split_main_out=(curr_scaled_throttle*(1-_zn1_ratio_aux));
+    } else {
+        if(curr_scaled_throttle<scale_thr_zn2_end) {
+            // Throttle zone 2: main working zone. main engine take most of the burden 
+            th_split_main_out = linear_interpolate(scale_thr_zn2_begin*(1.0f-_zn1_ratio_aux), 
+                1.0f, 
+                curr_scaled_throttle, 
+                scale_thr_zn2_begin,
+                scale_thr_zn2_end);
+        } else {
+            // Throttle zone 3: main throttle is saturated, ramp up aux motors up to their max 
+            th_split_main_out=1.0f;
+        }
+    }
+
+    return constrain_float(th_split_main_out, 0.0f, 1.0f);
+}
+
+//get rescaled total split throttle
+float AP_MotorsMatrix::get_throttle_split_total()
+{
+    //Calculate the total throttle for both main engine & aux motors
+    //[Then Aux throttle] = [Total throttle] - [actual Main throttle]
+    float curr_throttle=get_throttle();
+    float th_split_total=0.0f;
+    float scale_thr_zn2_end=1.0f*_sat_point_main;
+
+    if(curr_throttle<scale_thr_zn2_end) {
+        th_split_total = linear_interpolate(0.0f,
+                1.0f+_max_thr_aux, 
+                curr_throttle, 
+                0.0f,
+                1.0f*_sat_point_main);
+    } else {
+        th_split_total = linear_interpolate(
+            1.0f+_max_thr_aux,
+            2.0f, 
+            curr_throttle, 
+            1.0f*_sat_point_main,
+            1.0f);
+    }
+    return constrain_float(th_split_total, 0.0f, 2.0f);
+}
+
 
 // check for failed motor
 //   should be run immediately after output_armed_stabilizing

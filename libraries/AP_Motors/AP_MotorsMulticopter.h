@@ -178,6 +178,17 @@ protected:
     AP_Float            _ice_i_limit_min;       // ice PID - i minimum limit
     AP_Float            _ice_i_limit_max;       // ice PID - i maximum limit
 
+    // scaling for booster motor throttle
+    AP_Float             _boost_throttle;
+    AP_Float             _boost_throttle_des;
+    AP_Float             _th_split_total_out;
+
+    // splitted thruttle parameters
+    AP_Float            _min_thr_aux;           // aux minimum throttle in the end of zone 1 and start of zone 2
+	AP_Float            _max_thr_aux;           // max aux throttle output at the end of zone 2
+    AP_Float            _zn1_ratio_aux;         // aux throttle portion in zone 1	
+	AP_Float            _sat_point_main;        // throttle level at which main engine reaches max throttle (end of zone 2) 
+
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;
 
