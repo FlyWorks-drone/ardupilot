@@ -422,7 +422,6 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
     }
     float ice_in_slew = 0;
-    bool valid_mode_activated = true;
     float scale_out = 100;
     switch (_ice_mix_mode) {
         case 1: { // Pass through
@@ -439,12 +438,8 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             scale_out = 100;
             break;
         } default: {
-            valid_mode_activated = false;
+            return false;
         }
-    }
-    
-    if ( ! valid_mode_activated ) { // no valid ICE mode was activated
-        return false;
     }
 
     ice_out = ice_in_slew * scale_out;
