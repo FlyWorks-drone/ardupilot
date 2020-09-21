@@ -409,34 +409,18 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
  */
 bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 {
-    if (_ice_ch_in <= 0) { // ice rc disabled
-        return false;
-    }
-
-    // find ICE control servo
-    uint8_t servo_chnl = 0;
-    if ( ! SRV_Channels::find_channel(SRV_Channel::k_throttle, servo_chnl) ) {
-        return false;
-    }
-    
-    SRV_Channel * const ice_out_servo_chnl = SRV_Channels::get_channel_for(SRV_Channel::k_throttle, servo_chnl);
-    if (ice_out_servo_chnl == nullptr) {
-        return false;
-    }
-
+    float ice_in_norm_val = 1.0f;
     const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
-    if (ice_in_channel == nullptr) {
-        return false;
+
+    if (!(ice_in_channel == nullptr)) { // ice rc enabled and found
+        // get ice radio channel boundaries and value
+        int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
+        const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
+        const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
+
+        constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+        ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
     }
-
-    // get ice radio channel boundaries and value
-    int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
-    const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
-    const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
-
-    constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
-    const float ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
-    
     float ice_in_slew = 0;
     bool valid_mode_activated = true;
     float scale_out = 100;
@@ -452,7 +436,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             break;
         } case 3: { // Thruttle Split
             ice_in_slew = get_booster_throttle();
-            scale_out = 1000;
+            scale_out = 100;
             break;
         } default: {
             valid_mode_activated = false;
