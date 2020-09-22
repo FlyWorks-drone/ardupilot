@@ -435,7 +435,6 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             break;
         } case 3: { // Thruttle Split
             ice_in_slew = get_booster_throttle();
-            scale_out = 100;
             break;
         } default: {
             return false;
