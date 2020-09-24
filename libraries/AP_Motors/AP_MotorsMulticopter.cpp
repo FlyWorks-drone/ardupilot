@@ -261,15 +261,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Range: -10 10
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("I_MIN", 49, AP_MotorsMulticopter, _ice_i_limit_min, -1),
-
-    // @Param: I_MAX
-    // @DisplayName: ICE I max limit
-    // @Description: ICE I max limit
-    // @Range: -10 10
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("I_MAX", 50, AP_MotorsMulticopter, _ice_i_limit_max, 1),
+    AP_GROUPINFO("I_LIM", 49, AP_MotorsMulticopter, _ice_i_limit, 1),
 
     /* END OF ICE PARAMS */
 

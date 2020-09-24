@@ -366,6 +366,7 @@ static float normalize(const uint16_t val, const int16_t min, const int16_t max)
 float AP_MotorsMatrix::ice_slew(const float norm_val) {
     static float last_norm_val = 0;
     float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
+    if (_ice_slew_rate<0)max_diff=1.0f;
 
     if(norm_val >= last_norm_val) {
         if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
@@ -389,7 +390,7 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
     static float integral = 0;
     static float last_err = 0;
 
-    integral=constrain_float(integral+err, _ice_i_limit_min, _ice_i_limit_max);
+    integral=constrain_float(integral+err, -_ice_i_limit, _ice_i_limit);
 
     //gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
 
