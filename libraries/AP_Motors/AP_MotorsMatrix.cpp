@@ -364,6 +364,7 @@ static float normalize(const uint16_t val, const int16_t min, const int16_t max)
  * @return float 
  */
 float AP_MotorsMatrix::ice_slew(const float norm_val) {
+    
     static float last_norm_val = 0;
     float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
     if (_ice_slew_rate<0)max_diff=1.0f;
@@ -419,9 +420,10 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
         const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
 
-        constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+        ice_in_raw_val=constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
         ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
     }
+    //gcs().send_text(MAV_SEVERITY_DEBUG, "norm: %f",ice_in_norm_val);
     float ice_in_slew = 0;
     float scale_out = 100;
     switch (_ice_mix_mode) {
