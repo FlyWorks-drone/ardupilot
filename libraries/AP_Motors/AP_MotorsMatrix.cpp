@@ -161,7 +161,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    throttle_thrust = get_throttle() * compensation_gain;
+    if (_ice_mix_mode==3) throttle_thrust = (get_throttle_split_total()-_boost_throttle) * compensation_gain;
+    else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
     // If thrust boost is active then do not limit maximum thrust
@@ -366,9 +367,10 @@ float AP_MotorsMatrix::ice_slew(const float norm_val) {
     
 
     static float last_norm_val = 0;
+    //To avoid 0 devision in next phase
+    if (_ice_slew_rate<=0)return norm_val;
     float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
-    if (_ice_slew_rate<0)max_diff=1.0f;
-
+    
     if(norm_val >= last_norm_val) {
         if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
         else last_norm_val = norm_val; 
@@ -449,9 +451,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 
 float AP_MotorsMatrix::get_booster_throttle()
 {
-    _th_split_total_out = get_throttle_split_total();
     _boost_throttle = ice_slew(get_throttle_split_main());
-    
     constrain_float(_boost_throttle, 0.0f, 1.0f);
 
     return _boost_throttle;

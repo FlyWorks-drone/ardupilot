@@ -180,7 +180,6 @@ protected:
     // scaling for booster motor throttle
     AP_Float             _boost_throttle;
     AP_Float             _boost_throttle_des;
-    AP_Float             _th_split_total_out;
 
     // splitted thruttle parameters
     AP_Float            _min_thr_aux;           // aux minimum throttle in the end of zone 1 and start of zone 2
