@@ -119,8 +119,7 @@ void AP_MotorsMatrix::output_to_motors()
     if ( ! output_ice ) {
         ice_out = 0;
     }
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, ice_out);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -162,7 +161,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    throttle_thrust = get_throttle() * compensation_gain;
+    if (_ice_mix_mode==3) throttle_thrust = (get_throttle_split_total()-_boost_throttle) * compensation_gain;
+    else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
     // If thrust boost is active then do not limit maximum thrust
@@ -364,9 +364,13 @@ static float normalize(const uint16_t val, const int16_t min, const int16_t max)
  * @return float 
  */
 float AP_MotorsMatrix::ice_slew(const float norm_val) {
-    static float last_norm_val = 0;
-    float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
+    
 
+    static float last_norm_val = 0;
+    //To avoid 0 devision in next phase
+    if (_ice_slew_rate<=0)return norm_val;
+    float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
+    
     if(norm_val >= last_norm_val) {
         if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
         else last_norm_val = norm_val; 
@@ -374,6 +378,7 @@ float AP_MotorsMatrix::ice_slew(const float norm_val) {
         if ((last_norm_val - norm_val) > max_diff) last_norm_val -= max_diff;
         else last_norm_val = norm_val;
     }
+    last_norm_val=constrain_float(last_norm_val,0.0f,1.0f);
 
     return last_norm_val;
 } 
@@ -389,7 +394,7 @@ float AP_MotorsMatrix::ice_pid_control(float err) {
     static float integral = 0;
     static float last_err = 0;
 
-    integral=constrain_float(integral+err, _ice_i_limit_min, _ice_i_limit_max);
+    integral=constrain_float(integral+err, -_ice_i_limit, _ice_i_limit);
 
     //gcs().send_text(MAV_SEVERITY_ERROR, "err: %f",err);
 
@@ -418,11 +423,11 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
         const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
 
-        constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+        ice_in_raw_val=constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
         ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
     }
-    float ice_in_slew = 0;
-    float scale_out = 100;
+    float ice_in_slew = 0.0f;
+    float scale_out = 100.0f;
     switch (_ice_mix_mode) {
         case 1: { // Pass through
             ice_in_slew = ice_slew(ice_in_norm_val);
@@ -435,29 +440,20 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             break;
         } case 3: { // Thruttle Split
             ice_in_slew = get_booster_throttle();
-            scale_out = 100;
             break;
         } default: {
             return false;
         }
     }
-
     ice_out = ice_in_slew * scale_out;
-
     return true;
 }
 
-// output booster throttle, if any
 float AP_MotorsMatrix::get_booster_throttle()
 {
-    if (_boost_scale > 0) { //this algorythm working condition is when _boost_scale>0
-        _th_split_total_out = get_throttle_split_total();
-        _boost_throttle = ice_slew(get_throttle_split_main());
-    } else {
-        _boost_throttle=0.0f;
-        _th_split_total_out=0.0f;
-    }
+    _boost_throttle = ice_slew(get_throttle_split_main());
     constrain_float(_boost_throttle, 0.0f, 1.0f);
+
     return _boost_throttle;
 }
 

@@ -175,13 +175,11 @@ protected:
     AP_Float            _ice_p_gain;            // ice PID - p gain
     AP_Float            _ice_i_gain;            // ice PID - i gain
     AP_Float            _ice_d_gain;            // ice PID - d gain
-    AP_Float            _ice_i_limit_min;       // ice PID - i minimum limit
-    AP_Float            _ice_i_limit_max;       // ice PID - i maximum limit
+    AP_Float            _ice_i_limit;       // ice PID - i minimum limit
 
     // scaling for booster motor throttle
     AP_Float             _boost_throttle;
     AP_Float             _boost_throttle_des;
-    AP_Float             _th_split_total_out;
 
     // splitted thruttle parameters
     AP_Float            _min_thr_aux;           // aux minimum throttle in the end of zone 1 and start of zone 2
