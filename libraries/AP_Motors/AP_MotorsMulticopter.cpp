@@ -498,10 +498,14 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
         // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && !armed()) {
-            pwm_output = 0;
-        } else {
-            pwm_output = get_pwm_output_min();
+        if (_ignt_mode) {
+            pwm_output = 1500-(500 * actuator);
+        }else{
+            if (_disarm_disable_pwm && !armed()) {
+                pwm_output = 0;
+            } else {
+                pwm_output = get_pwm_output_min();
+            }
         }
     } else {
         // in all other spool modes, covert to desired PWM

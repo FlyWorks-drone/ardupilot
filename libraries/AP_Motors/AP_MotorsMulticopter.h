@@ -217,4 +217,7 @@ protected:
 
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
+
+    //ingnition sequence mode
+    bool                _ignt_mode = false; //when true - the aux motors recieve equal and reversed throttle input
 };

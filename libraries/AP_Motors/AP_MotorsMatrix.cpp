@@ -65,6 +65,18 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
     set_update_rate(_speed_hz);
 }
 
+/**
+ * @brief scale value b/w min and max to range of 0..1
+ * 
+ * @param val 
+ * @param min 
+ * @param max 
+ * @return float [0..1]
+ */
+static float normalize(const uint16_t val, const int16_t min, const int16_t max) {
+    return (static_cast<float>(val) - min) / (max - min);
+}
+
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
@@ -74,12 +86,44 @@ void AP_MotorsMatrix::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
+
+        float ign_switch_norm_val = 1.0f;
+        const RC_Channel * ign_channel_switch = rc().channel(9-1);
+        const RC_Channel * ign_pass_channel = rc().channel(3-1);
+
+                    if (!(ign_channel_switch == nullptr)) { // ice rc enabled and found
+                        // get ice radio channel boundaries and value
+                        int16_t ign_switch_raw_val = ign_channel_switch->get_radio_in();
+                        const int16_t ign_switch_raw_min = ign_channel_switch->get_radio_min();
+                        const int16_t ign_switch_raw_max = ign_channel_switch->get_radio_max();
+
+                        ign_switch_raw_val=constrain_int16(ign_switch_raw_val, ign_switch_raw_min, ign_switch_raw_max);
+                        ign_switch_norm_val = normalize(ign_switch_raw_val, ign_switch_raw_min, ign_switch_raw_max);
+                    }
+
+                    if (ign_switch_norm_val > 0.5f) _ignt_mode=true;
+                    else _ignt_mode=false;
+                //*****************************************************************
+                    if (_ignt_mode) {
+                        float ign_pass_norm = normalize(ign_pass_channel->get_radio_in(), ign_pass_channel->get_radio_min(), ign_pass_channel->get_radio_max());
+                        //float ign_pass_norm_rev = 0.5f-ign_pass_norm;
+                        
+                        for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                            if (motor_enabled[i]) {  
+                            _actuator[i] = ign_pass_norm;
+                            }
+                        }
+                    }
+                    else{
+                        for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                            if (motor_enabled[i]) {
+                            _actuator[i] = 0.0f;
+                            }
+                        }
+
+                    }
             
-            for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
-                    _actuator[i] = 0.0f;
-                }
-            }
+            
             output_ice = false;
             break;
         }
@@ -342,18 +386,6 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // check for failed motor
     check_for_failed_motor(throttle_thrust_best_plus_adj);
-}
-
-/**
- * @brief scale value b/w min and max to range of 0..1
- * 
- * @param val 
- * @param min 
- * @param max 
- * @return float [0..1]
- */
-static float normalize(const uint16_t val, const int16_t min, const int16_t max) {
-    return (static_cast<float>(val) - min) / (max - min);
 }
 
 
