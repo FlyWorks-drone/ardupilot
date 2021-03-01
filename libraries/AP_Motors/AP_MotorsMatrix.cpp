@@ -82,13 +82,14 @@ void AP_MotorsMatrix::output_to_motors()
     int8_t i;
 
     bool output_ice = true;
+    _ignt_mode=false;
     
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
 
         float ign_switch_norm_val = 1.0f;
-        const RC_Channel * ign_channel_switch = rc().channel(9-1);
+        const RC_Channel * ign_channel_switch = rc().channel(_can_rev_ch_in-1);
         const RC_Channel * ign_pass_channel = rc().channel(3-1);
 
                     if (!(ign_channel_switch == nullptr)) { // ice rc enabled and found
@@ -102,14 +103,14 @@ void AP_MotorsMatrix::output_to_motors()
                     }
 
                     if (ign_switch_norm_val > 0.5f) _ignt_mode=true;
-                    else _ignt_mode=false;
+                    
+                    
                 //*****************************************************************
                     if (_ignt_mode) {
                         float ign_pass_norm = normalize(ign_pass_channel->get_radio_in(), ign_pass_channel->get_radio_min(), ign_pass_channel->get_radio_max());
-                        //float ign_pass_norm_rev = 0.5f-ign_pass_norm;
                         
                         for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                            if (motor_enabled[i]) {  
+                            if (motor_enabled[i]) {
                             _actuator[i] = ign_pass_norm;
                             }
                         }

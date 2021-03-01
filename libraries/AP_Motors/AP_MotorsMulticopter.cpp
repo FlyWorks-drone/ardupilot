@@ -299,6 +299,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAIN_SAT_TH", 54, AP_MotorsMulticopter, _sat_point_main, 0.85),
 
+    // @Param: CAN_REV_CH
+    // @DisplayName: UAVCAN reversing channel
+    // @Description: RCIN channel for which 
+    // @Range: 1 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CAN_REV_CH", 55, AP_MotorsMulticopter, _can_rev_ch_in, 9),
+
     /* END OF THROTTLE SPLIT PARAMS */    
 
     AP_GROUPEND
@@ -499,7 +507,7 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
     if (_spool_state == SpoolState::SHUT_DOWN) {
         // in shutdown mode, use PWM 0 or minimum PWM
         if (_ignt_mode) {
-            pwm_output = 1500-(500 * actuator);
+            pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
         }else{
             if (_disarm_disable_pwm && !armed()) {
                 pwm_output = 0;

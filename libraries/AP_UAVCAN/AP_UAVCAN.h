@@ -26,6 +26,8 @@
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
+#include <AP_Motors/AP_MotorsMulticopter.h>
+
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192

@@ -28,6 +28,8 @@
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
 
+
+
 /// @class      AP_MotorsMulticopter
 class AP_MotorsMulticopter : public AP_Motors {
 public:
@@ -86,6 +88,9 @@ public:
     
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
+
+    //ingnition sequence mode
+    bool _ignt_mode=false; //when true - the aux motors recieve equal and reversed throttle input
 
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
@@ -177,6 +182,8 @@ protected:
     AP_Float            _ice_d_gain;            // ice PID - d gain
     AP_Float            _ice_i_limit;       // ice PID - i minimum limit
 
+    AP_Int8             _can_rev_ch_in;             // UAVCAN reversing channel
+
     // scaling for booster motor throttle
     AP_Float             _boost_throttle;
     AP_Float             _boost_throttle_des;
@@ -218,6 +225,5 @@ protected:
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
 
-    //ingnition sequence mode
-    bool                _ignt_mode = false; //when true - the aux motors recieve equal and reversed throttle input
+    
 };

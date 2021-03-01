@@ -18,9 +18,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+
+
 #if HAL_WITH_UAVCAN
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
+
+
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -54,11 +58,16 @@
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
 
+
+
+
 #define LED_DELAY_US 50000
 
 extern const AP_HAL::HAL& hal;
 
 #define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
+
+uint16_t GCS_errmsg_counter=0;
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
@@ -525,9 +534,28 @@ void AP_UAVCAN::SRV_send_esc(void)
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
-                scaled = constrain_float(scaled, 0, cmd_max);
+                if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
+                    scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
+                }
+                else{
+                    scaled = constrain_float(scaled, 0, cmd_max);
+                }
+
+                /*
+                //***************************DEBUGGING***********************************
+                if (GCS_errmsg_counter>1100){
+                    gcs().send_text(MAV_SEVERITY_ERROR, "MOT: %d Scaled: %f",i,scaled);
+                    GCS_errmsg_counter=0;
+                    }
+                else GCS_errmsg_counter ++;
+                //***************************DEBUGGING***********************************
+                */
+
 
                 esc_msg.cmd.push_back(static_cast<int>(scaled));
+
+                
+
             } else {
                 esc_msg.cmd.push_back(static_cast<unsigned>(0));
             }
