@@ -125,7 +125,7 @@ void AP_MotorsMatrix::output_to_motors()
                     }
             
             
-            output_ice = false;
+            //output_ice = false;
             break;
         }
         case SpoolState::GROUND_IDLE:
@@ -461,21 +461,26 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     }
     float ice_in_slew = 0.0f;
     float scale_out = 100.0f;
-    switch (_ice_mix_mode) {
-        case 1: { // Pass through
-            ice_in_slew = ice_slew(ice_in_norm_val);
-            break;
-        } case 2: { // Constant gain
-            const float p_gained_throttle = get_throttle() * _ice_p_gain;
-            // mix with incoming rc value
-            const float mixed_output = ice_in_norm_val * p_gained_throttle;
-            ice_in_slew = ice_slew(mixed_output);
-            break;
-        } case 3: { // Thruttle Split
-            ice_in_slew = get_booster_throttle();
-            break;
-        } default: {
-            return false;
+    if (_spool_state==SpoolState::SHUT_DOWN){
+        ice_in_slew = ice_slew(ice_in_norm_val);
+    }
+    else{
+        switch (_ice_mix_mode) {
+            case 1: { // Pass through
+                ice_in_slew = ice_slew(ice_in_norm_val);
+                break;
+            } case 2: { // Constant gain
+                const float p_gained_throttle = get_throttle() * _ice_p_gain;
+                // mix with incoming rc value
+                const float mixed_output = ice_in_norm_val * p_gained_throttle;
+                ice_in_slew = ice_slew(mixed_output);
+                break;
+            } case 3: { // Thruttle Split
+                ice_in_slew = get_booster_throttle();
+                break;
+            } default: {
+                return false;
+            }
         }
     }
     ice_out = ice_in_slew * scale_out;
