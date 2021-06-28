@@ -519,6 +519,8 @@ float AP_MotorsMatrix::get_throttle_split_main()
         }
     }
 
+    if (th_split_main_out<_ice_min_armed) th_split_main_out=_ice_min_armed;
+
     return constrain_float(th_split_main_out, 0.0f, 1.0f);
 }
 

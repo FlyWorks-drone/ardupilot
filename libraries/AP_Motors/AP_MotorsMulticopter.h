@@ -183,6 +183,7 @@ protected:
     AP_Float            _ice_i_limit;       // ice PID - i minimum limit
 
     AP_Int8             _can_rev_ch_in;             // UAVCAN reversing channel
+    AP_Float            _ice_min_armed;       // minimum allowed ice throttle while armed
 
     // scaling for booster motor throttle
     AP_Float             _boost_throttle;

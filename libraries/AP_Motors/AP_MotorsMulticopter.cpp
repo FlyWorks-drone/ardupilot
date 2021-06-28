@@ -307,6 +307,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CAN_REV_CH", 55, AP_MotorsMulticopter, _can_rev_ch_in, 9),
 
+    // @Param: ICE_MIN_ARMED
+    // @DisplayName: Min ICE throttle 
+    // @Description: Minimum allowed normalized ice throttle while armed
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_MIN_ARMED", 56, AP_MotorsMulticopter, _ice_min_armed, 0.05),
+
     /* END OF THROTTLE SPLIT PARAMS */    
 
     AP_GROUPEND
