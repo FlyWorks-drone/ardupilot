@@ -313,7 +313,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("ICE_MIN_ARMED", 56, AP_MotorsMulticopter, _ice_min_armed, 0.05),
+    AP_GROUPINFO("ICE_MIN_ARM", 56, AP_MotorsMulticopter, _ice_min_arm, 0.05),
 
     /* END OF THROTTLE SPLIT PARAMS */    
 
