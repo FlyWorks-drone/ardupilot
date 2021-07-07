@@ -190,9 +190,7 @@ protected:
     AP_Float             _boost_throttle_des;
 
     // splitted thruttle parameters
-    AP_Float            _min_thr_aux;           // aux minimum throttle in the end of zone 1 and start of zone 2
 	AP_Float            _max_thr_aux;           // max aux throttle output at the end of zone 2
-    AP_Float            _zn1_ratio_aux;         // aux throttle portion in zone 1	
 	AP_Float            _sat_point_main;        // throttle level at which main engine reaches max throttle (end of zone 2) 
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter

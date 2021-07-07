@@ -206,7 +206,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    if (_ice_mix_mode==3) throttle_thrust = (get_throttle_split_total()-_boost_throttle) * compensation_gain;
+    if (_ice_mix_mode==3) throttle_thrust = get_throttle_split_aux() * compensation_gain;
     else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
@@ -497,57 +497,51 @@ float AP_MotorsMatrix::get_booster_throttle()
 
 float AP_MotorsMatrix::get_throttle_split_main()
 {
-    float curr_scaled_throttle=2.0f*get_throttle();
+    float curr_throttle=get_throttle();
     float th_split_main_out=0.0f;
-    float scale_thr_zn2_begin=_min_thr_aux/_zn1_ratio_aux;
-    float scale_thr_zn2_end=2.0f*_sat_point_main;
 
-    if(curr_scaled_throttle<scale_thr_zn2_begin){
-        // Throttle zone 1: spool up the aux motors up to their min throttle 
-        th_split_main_out=(curr_scaled_throttle*(1-_zn1_ratio_aux));
+    //=IF(F13<MOT_MAIN_SAT_TH,MOT_ICE_MIN_ARM+F13*(1-)/MOT_MAIN_SAT_TH,1)
+
+    if(curr_throttle<=_sat_point_main){
+        th_split_main_out= linear_interpolate(
+            _ice_min_arm,
+            1,
+            curr_throttle,
+            0,
+            _sat_point_main);
+
     } else {
-        if(curr_scaled_throttle<scale_thr_zn2_end) {
-            // Throttle zone 2: main working zone. main engine take most of the burden 
-            th_split_main_out = linear_interpolate(scale_thr_zn2_begin*(1.0f-_zn1_ratio_aux), 
-                1.0f, 
-                curr_scaled_throttle, 
-                scale_thr_zn2_begin,
-                scale_thr_zn2_end);
-        } else {
-            // Throttle zone 3: main throttle is saturated, ramp up aux motors up to their max 
-            th_split_main_out=1.0f;
-        }
+        th_split_main_out = 1.0f;
     }
 
-    if (th_split_main_out<float(_ice_min_arm)) th_split_main_out=float(_ice_min_arm);
-
-    return constrain_float(th_split_main_out, 0.0f, 1.0f);
+    return constrain_float(th_split_main_out, 0.0f, 2.0f);
 }
 
-//get rescaled total split throttle
-float AP_MotorsMatrix::get_throttle_split_total()
+float AP_MotorsMatrix::get_throttle_split_aux()
 {
-    //Calculate the total throttle for both main engine & aux motors
-    //[Then Aux throttle] = [Total throttle] - [actual Main throttle]
     float curr_throttle=get_throttle();
-    float th_split_total=0.0f;
-    float scale_thr_zn2_end=1.0f*_sat_point_main;
+    float th_split_aux_out=0.0f;
 
-    if(curr_throttle<scale_thr_zn2_end) {
-        th_split_total = linear_interpolate(0.0f,
-                1.0f+_max_thr_aux, 
-                curr_throttle, 
-                0.0f,
-                1.0f*_sat_point_main);
+    //=IF(F13<MOT_MAIN_SAT_TH,MOT_SPIN_ARM+F13*(MOT_AUX_MAX_TH-MOT_SPIN_ARM)/MOT_MAIN_SAT_TH,MOT_AUX_MAX_TH+(F13-MOT_MAIN_SAT_TH)*(1-MOT_AUX_MAX_TH)/(1-MOT_MAIN_SAT_TH))
+
+    if(curr_throttle<=_sat_point_main){
+        th_split_aux_out= linear_interpolate(
+            _spin_arm,
+            _max_thr_aux,
+            curr_throttle,
+            0,
+            _sat_point_main);
+
     } else {
-        th_split_total = linear_interpolate(
-            1.0f+_max_thr_aux,
-            2.0f, 
-            curr_throttle, 
-            1.0f*_sat_point_main,
-            1.0f);
+        th_split_aux_out= linear_interpolate(
+            _max_thr_aux,
+            1,
+            curr_throttle,
+            _sat_point_main,
+            1);
     }
-    return constrain_float(th_split_total, 0.0f, 2.0f);
+
+    return constrain_float(th_split_aux_out, 0.0f, 2.0f);
 }
 
 

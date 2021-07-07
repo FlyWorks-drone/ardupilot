@@ -105,6 +105,6 @@ private:
     // splitted thruttle functions
     float get_booster_throttle();
     float get_throttle_split_main();
-    float get_throttle_split_total();
+    float get_throttle_split_aux();
 
 };

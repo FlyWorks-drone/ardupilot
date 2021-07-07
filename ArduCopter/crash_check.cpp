@@ -92,7 +92,7 @@ void Copter::crash_check()
 void Copter::thrust_loss_check()
 {
     //**********************************************************************************
-    //Thrust lost alrgorythm temporarily removed
+    //Thrust lost alrgorythm temporarily disabled
     return;
     //**********************************************************************************
 

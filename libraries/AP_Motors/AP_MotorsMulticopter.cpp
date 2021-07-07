@@ -267,22 +267,6 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     /* START THROTTLE SPLIT PARAMS */
 
-    // @Param: AUX_MIN_TH
-    // @DisplayName: AUX MIN ZONE 2 THROTTLE
-    // @Description: aux minimum throttle in the end of zone 1 and start of zone 2
-    // @Range: 0 1
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("AUX_MIN_TH", 51, AP_MotorsMulticopter, _min_thr_aux, 0.15),
-
-    // @Param: AUX_ZN1_RAT
-    // @DisplayName: AUX PORTION OF THRTOTTLE IN ZONE 1
-    // @Description: aux throttle portion in zone 1	
-    // @Range: 0 1
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("AUX_ZN1_RAT", 52, AP_MotorsMulticopter, _zn1_ratio_aux, 0.8),
-
     // @Param: AUX_MAX_TH
     // @DisplayName: AUX MAX ZONE 2 THROTTLE
     // @Description: max aux throttle output at the end of zone 2
